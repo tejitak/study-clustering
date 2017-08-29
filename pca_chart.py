@@ -3,28 +3,29 @@ from PIL import Image
 import numpy as np
 from sklearn import decomposition
 import pylab as pl
+import pandas as pd
 
-STANDARD_SIZE = (120, 120)
+# STANDARD_SIZE = (120, 120)
 
-def img_to_matrix(filename, verbose=False):
+def img_to_matrix(filename):
     img = Image.open(filename)
-    if verbose:
-        print('changing size from %s to %s' % (str(img.size), str(STANDARD_SIZE)))
-    img = img.resize(STANDARD_SIZE)
+    # img = img.resize(STANDARD_SIZE)
     imgArray = np.asarray(img)
-    return imgArray  # imgArray.shape = (167 x 300 x 3)
+    return imgArray
 
-def flatten_image(img):
-    """
-    takes in an (m, n) numpy array and flattens it 
-    into an array of shape (1, m * n)
-    """
+def flatten_image(img, filename):
+    # no channels containing means no data?
     if len(img.shape) == 2:
+      return None
+    # additional prop 'channels' indicates alpha for 4
+    # 3 means RGB?
+    if img.shape[2] == 4:
       return None
 
     # s = img.shape[0] * img.shape[1]
     s = img.shape[0] * img.shape[1] * img.shape[2]
     img_wide = img.reshape(1, s)
+    # print(len(img_wide[0]), img_wide[0])
     return img_wide[0]
 
 # main
@@ -33,22 +34,21 @@ if __name__ == "__main__":
     images = [img_dir+ f for f in os.listdir(img_dir)]
     data = []
     for image in images:
-        if image == "./images_data/.DS_Store":
+        if image == img_dir + ".DS_Store":
             continue
         img = img_to_matrix(image)
-        img = flatten_image(img)
+        img = flatten_image(img, image)
         if img is not None:
             data.append(img)
         #else:
         #   print(' No data contains!' + image)
 
-    data = np.array(data)
-
+    print('Count', len(data))
+    data = np.asarray(data)
     pca = decomposition.PCA(n_components=2)
-    print(len(data))
     pca.fit(data)
     X = pca.transform(data)
     df = pd.DataFrame({"x": X[:, 0], "y": X[:, 1], "label":"Logo"})
     pl.scatter(df['x'], df['y'], c="red", label="Logo")
-    pl.legend()
+    # pl.legend()
     pl.show()
